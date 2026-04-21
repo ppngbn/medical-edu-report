@@ -3,7 +3,7 @@ from github import Github
 import github # 에러 처리를 위해 필요함
 
 # --- 설정 (꼭 본인 정보로 확인하세요!) ---
-GITHUB_TOKEN = "11B37IKZY0GVbCp9gUFDCk_BoqViwL3dLTMJuUl6ZggMiZgvBMrsq4RJl2OsigSkjMD6EDHVHIyNxVgUL2"
+GITHUB_TOKEN = "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"
 REPO_NAME = "ppngbn/medical-edu-report"
 
 
