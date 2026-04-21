@@ -1,83 +1,93 @@
 import streamlit as st
 from github import Github
 import pandas as pd
-import io
 
-# --- 설정 ---
+# --- 설정 (Secrets 금고 사용) ---
 GITHUB_TOKEN = st.secrets["GITHUB_TOKEN"]
 REPO_NAME = st.secrets["REPO_NAME"]
 
-st.set_page_config(page_title="관리자 시스템", layout="wide")
-st.title("🔐 교육 결과보고 통합 관리 시스템")
+st.set_page_config(page_title="관리자 대시보드", layout="wide")
+st.title("📊 교육 결과보고 제출 현황판")
 
 # 깃허브 연결
 g = Github(GITHUB_TOKEN)
 repo = g.get_repo(REPO_NAME)
 
-st.subheader("📊 기관별 교육 이수 현황 합계")
-
 try:
+    # 'data' 폴더 안의 파일들 가져오기
     contents = repo.get_contents("data")
     
-    all_data = [] # 모든 기관의 숫자를 모을 리스트
-    file_info_list = [] # 파일 다운로드용 리스트
-
-    with st.spinner('데이터를 분석 중입니다...'):
-        for content in contents:
-            if content.name == ".gitkeep": continue
-            
-            # 1. 파일 내용 가져오기 (메모리로 직접 읽기)
-            file_data = content.decoded_content
-            
-            try:
-                # 2. 엑셀 분석 (보안망을 타지 않고 서버 내부에서 읽음)
-                df = pd.read_excel(io.BytesIO(file_data))
-                
-                # 예시 서식의 컬럼명에 맞춰 데이터 추출 (컬럼명은 서식에 맞게 수정 필요)
-                # 여기서는 '교육명', '대상자수', '이수자수'가 있다고 가정합니다.
-                if '교육명' in df.columns:
-                    summary = df.groupby('교육명')[['대상자수', '이수자수']].sum().reset_index()
-                    summary['기관명'] = content.name.split('_')[1] # 파일명에서 기관명 추출
-                    all_data.append(summary)
-                
-                # 파일 다운로드용 정보 저장
-                file_info_list.append({"name": content.name, "data": file_data})
-                
-            except Exception as e:
-                st.warning(f"⚠️ {content.name} 파일을 읽을 수 없습니다: {e}")
-
-    # --- [화면 출력 1: 통합 집계표] ---
-    if all_data:
-        total_df = pd.concat(all_data, ignore_index=True)
-        # 전체 합계 계산
-        pivot_total = total_df.groupby('교육명')[['대상자수', '이수자수']].sum()
-        pivot_total['이수율(%)'] = (pivot_total['이수자수'] / pivot_total['대상자수'] * 100).round(1)
+    # 1. 파일 이름에서 필요한 정보(통계용) 뽑아내기
+    raw_data = []
+    for content in contents:
+        if content.name == ".gitkeep": continue # 빈 폴더 방지용 파일은 제외
         
-        st.write("### 📈 전체 교육 항목별 합계")
-        st.table(pivot_total)
+        # 파일명 구조: [시간]_[기관분류]_[기관명]_[원래파일명].xlsx
+        parts = content.name.split('_')
         
-        st.write("### 🏢 기관별 상세 내역")
-        st.dataframe(total_df)
+        if len(parts) >= 3:
+            raw_data.append({
+                "제출시간": parts[0],
+                "기관분류": parts[1],
+                "기관명": parts[2],
+                "파일명": content.name,
+                "content_obj": content # 💡 다운로드를 위해 파일 객체 자체를 저장
+            })
+
+    # 데이터를 분석하기 쉬운 표(DataFrame)로 변환
+    df = pd.DataFrame(raw_data)
+
+    # --- 2. 상단: 기관 분류별 종합 통계 (대시보드 핵심) ---
+    st.subheader("💡 종합 현황 (기관 분류별 제출 수)")
+    if not df.empty:
+        counts = df['기관분류'].value_counts()
+        
+        # 종류 개수만큼 가로로 칸을 나누어서 숫자 표시
+        cols = st.columns(len(counts))
+        for i, (cat, count) in enumerate(counts.items()):
+            cols[i].metric(label=cat, value=f"{count}개소")
     else:
-        st.info("아직 분석할 데이터가 없습니다.")
+        st.info("아직 제출된 내역이 없습니다.")
 
     st.divider()
 
-    # --- [화면 출력 2: 보안망 우회 다운로드] ---
-    st.subheader("📥 원본 파일 다운로드")
-    st.caption("링크 방식이 아닌 사이트 직접 전송 방식으로 보안 차단을 우회합니다.")
-    
-    for file_info in file_info_list:
-        col1, col2 = st.columns([4, 1])
-        col1.write(f"📄 {file_info['name']}")
-        # 💡 중요: 링크가 아닌 st.download_button 사용 (보안망 통과 가능성 높음)
-        col2.download_button(
-            label="내려받기",
-            data=file_info['data'],
-            file_name=file_info['name'],
-            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-            key=file_info['name'] # 고유 키 설정
+    # --- 3. 하단: 필터링 가능한 상세 리스트 및 다운로드 ---
+    st.subheader("📂 상세 제출 내역 및 다운로드")
+    if not df.empty:
+        # 드롭다운으로 원하는 기관만 걸러서 보기 기능
+        selected_cat = st.multiselect(
+            "📌 필터링할 기관 분류를 선택하세요", 
+            options=df['기관분류'].unique(), 
+            default=df['기관분류'].unique()
         )
+        
+        # 선택한 기관만 남기기
+        filtered_df = df[df['기관분류'].isin(selected_cat)]
+        st.write(f"검색 결과: 총 **{len(filtered_df)}**건")
+        
+        # 리스트 출력 및 다운로드 버튼 생성
+        for index, row in filtered_df.iterrows():
+            col1, col2, col3 = st.columns([1.5, 4, 2])
+            
+            # 날짜 형식 다듬기 (YYYYMMDD -> YYYY-MM-DD)
+            date_str = row['제출시간']
+            formatted_date = f"{date_str[:4]}-{date_str[4:6]}-{date_str[6:8]}"
+            
+            col1.write(f"**[{row['기관분류']}]**")
+            col2.write(f"{row['기관명']} (제출일: {formatted_date})")
+            
+            # 💡 사내 보안망 우회용 다운로드 버튼
+            with col3:
+                # 다운로드 버튼을 누르기 전 미리 파일 데이터를 읽어옴
+                file_data = row['content_obj'].decoded_content
+                st.download_button(
+                    label="📥 내려받기",
+                    data=file_data,
+                    file_name=row['파일명'],
+                    mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                    key=row['파일명']
+                )
+            st.markdown("---")
 
 except Exception as e:
-    st.error(f"데이터를 가져오는 중 오류 발생: {e}")
+    st.error(f"데이터를 불러오는 중 오류가 발생했습니다. (아직 제출 내역이 없거나 네트워크 오류일 수 있습니다): {e}")
