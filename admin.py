@@ -1,37 +1,31 @@
 import streamlit as st
 import pandas as pd
+from github import Github # 깃허브 조작용 도구
+import base64
 
-# --- 관리자 페이지 설정 ---
-st.set_page_config(page_title="관리자 전용 결산 시스템", layout="wide")
+# --- 깃허브 설정 (보안을 위해 나중에 Streamlit Secrets에 넣는게 좋아요) ---
+GITHUB_TOKEN = "11B37IKZY0GVbCp9gUFDCk_BoqViwL3dLTMJuUl6ZggMiZgvBMrsq4RJl2OsigSkjMD6EDHVHIyNxVgUL2"
+REPO_NAME = "ppngbn/medical-edu-report"
 
-st.title("🔐 교육 결과 관리자 시스템")
-st.sidebar.title("관리 메뉴")
+def upload_to_github(file_name, file_content, hospital_name):
+    g = Github(GITHUB_TOKEN)
+    repo = g.get_repo(REPO_NAME)
+    
+    # 저장될 경로: data/기관명_시간.xlsx
+    path = f"data/{hospital_name}_{file_name}"
+    
+    # 깃허브에 파일 생성
+    repo.create_file(path, f"Upload from {hospital_name}", file_content)
 
-# 현재는 데이터베이스 연결 전이라 예시 리스트만 보여줍니다.
-st.subheader("📊 실시간 제출 현황 리스트")
+st.title("🏥 교육 결과보고 제출처")
 
-# 임시 데이터 (나중에 구글 시트 연동 시 자동으로 채워집니다)
-st.info("데이터베이스(구글 시트)를 연결하면 여기에 실시간 리스트가 나타납니다.")
+with st.form("my_form"):
+    inst_name = st.text_input("의료기관명")
+    uploaded_file = st.file_uploader("엑셀 파일 선택", type=["xlsx"])
+    submit = st.form_submit_button("제출")
 
-# 예시 테이블 구조
-data = {
-    "제출일시": ["2026-04-21 10:05", "2026-04-21 11:20"],
-    "기관분류": ["종합병원", "의원"],
-    "기관명": ["한국병원", "서울내과"],
-    "담당자": ["홍길동", "김철수"],
-    "이메일": ["hong@mail.com", "kim@mail.com"],
-    "파일": ["report_01.xlsx", "report_02.xlsx"]
-}
-df = pd.DataFrame(data)
-st.table(df)
-
-st.divider()
-
-st.subheader("📥 전체 데이터 다운로드")
-col1, col2 = st.columns(2)
-with col1:
-    if st.button("전체 제출 명단 다운로드 (CSV)"):
-        st.write("준비 중...")
-with col2:
-    if st.button("모든 첨부파일 압축 다운로드"):
-        st.write("준비 중...")
+if submit and uploaded_file and inst_name:
+    # 파일을 읽어서 깃허브로 전송
+    file_bytes = uploaded_file.getvalue()
+    upload_to_github(uploaded_file.name, file_bytes, inst_name)
+    st.success("파일이 성공적으로 서버에 저장되었습니다!")
