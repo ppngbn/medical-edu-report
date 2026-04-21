@@ -3,6 +3,7 @@ import pandas as pd
 from github import Github
 from datetime import datetime
 
+# --- 설정 ---
 GITHUB_TOKEN = st.secrets["GITHUB_TOKEN"] 
 REPO_NAME = st.secrets["REPO_NAME"]
 
