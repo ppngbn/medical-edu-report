@@ -16,6 +16,9 @@ st.title("🔐 교육 결과보고 통합 관리 시스템")
 g = Github(GITHUB_TOKEN)
 repo = g.get_repo(REPO_NAME)
 
+# 기관 분류 리스트 정의 (0건 표시용)
+CATEGORIES = ["종합병원", "병원", "요양병원", "한방병원", "치과병원", "의원", "치과의원", "한의원"]
+
 try:
     # 2. 데이터 불러오기 및 파싱
     contents = repo.get_contents("data")
@@ -41,18 +44,28 @@ try:
 
     df = pd.DataFrame(raw_data)
 
+    # --- [상단: 통계 요약 (0건 포함)] ---
+    st.subheader("📊 기관별 제출 통계")
+    
+    # 모든 카테고리에 대해 기본값 0 설정
+    stats = {cat: 0 for cat in CATEGORIES}
+    if not df.empty:
+        actual_counts = df['기관분류'].value_counts().to_dict()
+        for cat, count in actual_counts.items():
+            if cat in stats:
+                stats[cat] = count
+    
+    # 4개씩 2줄로 배치 (가독성 향상)
+    stat_cols = st.columns(4)
+    for idx, cat in enumerate(CATEGORIES):
+        with stat_cols[idx % 4]:
+            st.metric(label=cat, value=f"{stats[cat]}건")
+
     if not df.empty:
         # 최신순 정렬 및 연번(No.) 부여
         df = df.sort_values(by="제출일시", ascending=False).reset_index(drop=True)
         df.insert(0, 'No.', range(1, len(df) + 1))
 
-        # --- [상단: 통계 요약] ---
-        st.subheader("📊 기관별 제출 통계")
-        counts = df['기관분류'].value_counts()
-        cols = st.columns(len(counts))
-        for i, (cat, count) in enumerate(counts.items()):
-            cols[i].metric(cat, f"{count}건")
-            
         # 전체 현황 엑셀 다운로드
         output = io.BytesIO()
         with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
@@ -82,7 +95,7 @@ try:
 
         st.divider()
 
-        # --- [하단: 개별 기관 관리 (다운로드 및 즉시 삭제)] ---
+        # --- [하단: 개별 기관 파일 관리 (다운로드 및 즉시 삭제)] ---
         st.subheader("📂 개별 기관 파일 관리 (다운로드/삭제)")
         
         if total_pages > 1:
@@ -92,15 +105,10 @@ try:
             
         dl_start = (dl_page - 1) * rows_per_page
         
-        # 리스트 출력
         for i, row in df.iloc[dl_start : dl_start + rows_per_page].iterrows():
-            # 3개의 컬럼으로 나눔 (정보 / 다운로드 / 삭제)
             c1, c2, c3 = st.columns([7, 1.5, 1.5])
-            
-            # 1번 컬럼: 기관 정보
             c1.write(f"**{row['No.']}**. [{row['기관분류']}] {row['기관명']} - {row['파일명']}")
             
-            # 2번 컬럼: 내려받기 버튼
             c2.download_button(
                 label="📥 내려받기", 
                 data=row['content_obj'].decoded_content, 
@@ -108,7 +116,6 @@ try:
                 key=f"dl_btn_{row['No.']}"
             )
             
-            # 3번 컬럼: 삭제 확인 팝오버
             with c3:
                 with st.popover("🗑️ 삭제"):
                     st.warning("정말 삭제하시겠습니까?")
@@ -117,12 +124,12 @@ try:
                             file_to_del = repo.get_contents(row['github_path'])
                             repo.delete_file(file_to_del.path, f"Admin Delete: {row['기관명']}", file_to_del.sha)
                             st.success(f"{row['기관명']} 삭제 완료")
-                            st.rerun() # 삭제 후 페이지 새로고침
+                            st.rerun()
                         except Exception as e:
                             st.error(f"삭제 실패: {e}")
-
+    else:
         st.divider()
-        st.caption("※ 삭제 버튼을 누르고 '네, 삭제합니다'를 클릭하면 깃허브 저장소에서 파일이 영구히 제거됩니다.")
+        st.info("현재 제출된 데이터가 없습니다.")
 
 except Exception as e:
     st.error(f"데이터를 불러오는 중 오류가 발생했습니다: {e}")
