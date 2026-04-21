@@ -3,9 +3,8 @@ import pandas as pd
 from github import Github
 from datetime import datetime
 
-# --- 설정 (본인 정보로 수정) ---
-GITHUB_TOKEN = "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"
-REPO_NAME = "ppngbn/medical-edu-report"
+GITHUB_TOKEN = st.secrets["GITHUB_TOKEN"] 
+REPO_NAME = st.secrets["REPO_NAME"]
 
 def upload_to_github(file_bytes, hospital_name, original_name):
     g = Github(GITHUB_TOKEN)
