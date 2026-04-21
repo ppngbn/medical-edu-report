@@ -24,7 +24,7 @@ def upload_to_github(file_bytes, inst_type, inst_name, phone, email, original_na
 
 # --- 2. UI 구성 ---
 st.set_page_config(page_title="신고의무자 교육 결과 제출", layout="centered")
-st.title("🏥 2026년 신고의무자 교육 결과 보고")
+st.title("🏥2026년 신고의무자 교육 결과 보고")
 st.info("기관 및 담당자 정보를 입력하신 후 결과보고서(엑셀)를 업로드해 주세요.")
 
 with st.form("upload_form"):
