@@ -2,8 +2,8 @@ import streamlit as st
 from github import Github
 
 # --- 설정 (app.py와 동일하게) ---
-GITHUB_TOKEN = "여기에_발급받은_토큰_넣으세요"
-REPO_NAME = "본인계정명/medical-edu-report"
+GITHUB_TOKEN = "11B37IKZY0GVbCp9gUFDCk_BoqViwL3dLTMJuUl6ZggMiZgvBMrsq4RJl2OsigSkjMD6EDHVHIyNxVgUL2"
+REPO_NAME = "ppngbn/medical-edu-report"
 
 st.set_page_config(page_title="관리자 시스템", layout="wide")
 st.title("🔐 교육 결과보고 관리자 페이지")
