@@ -2,6 +2,7 @@ import streamlit as st
 from github import Github
 import github # 에러 처리를 위해 필요함
 
+# --- 설정 ---
 GITHUB_TOKEN = st.secrets["GITHUB_TOKEN"] 
 REPO_NAME = st.secrets["REPO_NAME"]
 
