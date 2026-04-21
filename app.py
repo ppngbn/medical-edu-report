@@ -4,8 +4,8 @@ from github import Github
 from datetime import datetime
 
 # --- 설정 (본인 정보로 수정) ---
-GITHUB_TOKEN = "여기에_발급받은_토큰_넣으세요"
-REPO_NAME = "본인계정명/medical-edu-report"
+GITHUB_TOKEN = "11B37IKZY0GVbCp9gUFDCk_BoqViwL3dLTMJuUl6ZggMiZgvBMrsq4RJl2OsigSkjMD6EDHVHIyNxVgUL2"
+REPO_NAME = "ppngbn/medical-edu-report"
 
 def upload_to_github(file_bytes, hospital_name, original_name):
     g = Github(GITHUB_TOKEN)
