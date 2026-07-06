@@ -10,14 +10,27 @@ REPO_NAME = st.secrets["REPO_NAME"]
 # 💡 여기에 UI 숨기기 코드를 추가합니다! 💡
 st.set_page_config(page_title="신고의무자 교육 결과 제출", layout="centered")
 
-hide_streamlit_style = """
+# 우측 하단 버튼을 덮어버리는 가짜 박스 생성 (클릭 방지)
+hide_and_cover = """
     <style>
-    #MainMenu {visibility: hidden;} /* 우측 상단 햄버거 메뉴 숨기기 */
-    footer {visibility: hidden;}    /* 하단 제작자 표시 및 워터마크 숨기기 */
-    header {visibility: hidden;}    /* 상단 헤더 숨기기 */
+    #MainMenu {visibility: hidden;} 
+    footer {visibility: hidden;}    
+    header {visibility: hidden;}    
+    
+    /* 우측 하단 버튼 위치에 사이트 배경색과 똑같은 스티커를 붙임 */
+    .cover-up {
+        position: fixed;
+        bottom: 0;
+        right: 0;
+        width: 150px;
+        height: 60px;
+        background-color: var(--background-color); 
+        z-index: 9999999;
+    }
     </style>
+    <div class="cover-up"></div>
 """
-st.markdown(hide_streamlit_style, unsafe_allow_html=True)
+st.markdown(hide_and_cover, unsafe_allow_html=True)
 
 # 깃허브 업로드 함수
 def upload_to_github(file_bytes, inst_type, inst_name, phone, email, original_name):
