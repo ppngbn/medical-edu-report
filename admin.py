@@ -5,9 +5,30 @@ import io
 import math
 from datetime import datetime
 
-# --- 1. 설정 (Secrets 사용) ---
+# --- 1. 설정 ---
 GITHUB_TOKEN = st.secrets["GITHUB_TOKEN"]
 REPO_NAME = st.secrets["REPO_NAME"]
+
+st.set_page_config(page_title="관리자 시스템", layout="wide")
+
+# 💡 관리자용 비밀번호 설정 (원하시는 암호로 변경하세요)
+ADMIN_PASSWORD = "80754098"
+
+# 암호 입력 창
+if "authenticated" not in st.session_state:
+    st.session_state.authenticated = False
+
+if not st.session_state.authenticated:
+    st.title("🔐 관리자 인증")
+    entered_password = st.text_input("관리자 암호를 입력하세요", type="password")
+    
+    if st.button("접속"):
+        if entered_password == ADMIN_PASSWORD:
+            st.session_state.authenticated = True
+            st.rerun() # 암호 맞으면 페이지 새로고침하여 본 화면 띄움
+        else:
+            st.error("암호가 틀렸습니다.")
+    st.stop() # 암호를 맞추기 전까지는 아래 코드를 실행하지 않음!
 
 st.set_page_config(page_title="관리자 시스템", layout="wide")
 st.title("🔐 교육 결과보고 통합 관리 시스템")
