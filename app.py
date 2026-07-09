@@ -3,12 +3,12 @@ from github import Github
 from datetime import datetime
 import pytz
 
-# --- 1. 설정 ---
+# --- 1. 설정 및 UI 숨기기 ---
+# 💡 페이지 설정은 반드시 맨 처음에 딱 한 번만!
+st.set_page_config(page_title="신고의무자 교육 결과 제출", layout="centered")
+
 GITHUB_TOKEN = st.secrets["GITHUB_TOKEN"]
 REPO_NAME = st.secrets["REPO_NAME"]
-
-# 💡 여기에 UI 숨기기 코드를 추가합니다! 💡
-st.set_page_config(page_title="신고의무자 교육 결과 제출", layout="centered")
 
 # 우측 하단 버튼을 덮어버리는 가짜 박스 생성 (클릭 방지)
 hide_and_cover = """
@@ -48,8 +48,7 @@ def upload_to_github(file_bytes, inst_type, inst_name, phone, email, original_na
     repo.create_file(path, f"제출: {inst_name}", file_bytes)
 
 # --- 2. UI 구성 ---
-st.set_page_config(page_title="신고의무자 교육 결과 제출", layout="centered")
-st.title("🏥2026년 신고의무자 교육 결과 보고")
+st.title("🏥 2026년 신고의무자 교육 결과 보고")
 st.info("기관 및 담당자 정보를 입력하신 후 결과보고서(엑셀)를 업로드해 주세요.")
 
 with st.form("upload_form"):
@@ -61,15 +60,13 @@ with st.form("upload_form"):
         ["종합병원", "병원", "요양병원", "한방병원", "치과병원", "의원", "치과의원", "한의원"]
     )
     
-    # 의료기관 명칭 (예시 문구 포함)
+    # 의료기관 명칭
     inst_name = st.text_input("의료기관 명칭", placeholder="예: 한국병원")
     
     col1, col2 = st.columns(2)
     with col1:
-        # 담당자 연락처 (예시 문구 포함)
         phone = st.text_input("담당자 연락처", placeholder="예: 010-0000-0000")
     with col2:
-        # 담당자 이메일 (예시 문구 포함)
         email = st.text_input("담당자 이메일", placeholder="예: example@mail.com")
         
     st.subheader("📂 보고서 업로드")
